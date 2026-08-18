@@ -6,7 +6,7 @@
     <title>Gemini Multimodal Workbench (Pro)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         .markdown-content p { margin-bottom: 0.75rem; }
         .markdown-content p:last-child { margin-bottom: 0; }
@@ -268,7 +268,9 @@
 
         // pdf.js needs a worker script to parse/render off the main thread
         if (window.pdfjsLib) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        } else {
+            console.error('pdf.js failed to load from CDN — PDF-to-image conversion will be unavailable.');
         }
 
         const MAX_PDF_PAGES = 40; // guard against runaway request sizes
@@ -277,6 +279,9 @@
         // one inlineData image part per page — this is what lets Gemini "see"
         // the page (layout, tables, diagrams) instead of relying on extracted text.
         async function convertPdfToImageParts(file, maxRes) {
+            if (!window.pdfjsLib) {
+                throw new Error('PDF library did not load. Check your internet connection and reload the page.');
+            }
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             const pageCount = Math.min(pdf.numPages, MAX_PDF_PAGES);
